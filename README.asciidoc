@@ -1,0 +1,125 @@
+gsdiff
+======
+
+`gsdiff` is a diff tool that works across data stores, in a global scope.
+
+Suppose the organization has a data lake that comprised of various kinds of data stores (e.g. databases, data warehouses, files, and directory services) and possibly cloud data lakes. Each of these data store has their own formats. Therefore, the data lake would be facing a common scenario that the shared data would need to be stored in one centralized location for regulatory compliance reasons.
+
+Take these records from data stores as an example: (For simplicity, they&#x2019;re at first munged into JSON-LD as shown below)
+[source, javascript]
+----
+{
+  "@context":
+  {
+    "@id": "http://xmlns.com/foaf/spec/Organization",
+    "@type": "@id",
+    "member": [
+      {
+        "@id": "http://xmlns.com/foaf/spec/Person",
+        "@type": "@id",
+        "name": "Gary Sit",
+        "mbox": "mailto:garyxsit@gmail.com",
+        "phone": "tel:+852.23456789",
+        "interest": "http://en.wikipedia.org/wiki/Semantic_Web"
+      }
+    ]
+  }
+}
+  
+----
+
+[source, javascript]
+----
+{
+  "@context":
+  {
+    "@id": "http://schema.org/Organization",
+    "@type": "@id",
+    "member": [
+      {
+        "@id": "http://schema.org/Person",
+        "@type": "@id",
+        "name": "Gary Sit",
+        "email": "mailto:garyxsit@gmail.com",
+        "telephone": [
+                       "+852 12345678",
+                       "+1-617-253-1000"
+                     ],
+        "address":
+        {
+          "@type": "PostalAddress",
+          "addressLocality": "Hong Kong",
+          "addressRegion": "HK"
+        }
+      }
+    ]
+  }
+}
+  
+----
+
+These 2 data records differ in the following:
+
+. The FOAF one has an extra property "interest"
+. The schema.org one has an extra property "address"
+. The property name (mbox for FOAF &#x003C;&#x003D;&#x003E; email for schema.org and phone for FOAF &#x003C;&#x003D;&#x003E; telephone for schema.org) and its values (tel: scheme for FOAF &#x003C;&#x003D;&#x003E; formatted strings for schema.org) are different
+. The schema.org one included a new phone number
+. Either one of the actual data isn&#x2019;t updated (e.g. an employee in the organization switched to use another phone number in one country)
+
+This tool solves the above problem by comparing data records between data sources to recommend data discrepancies using a familiar SQL syntax with a similarity measure:
+
+[source, sql]
+----
+SELECT * FROM origin
+WHERE get_similarity(Oracle.metadata, Cassandra.metadata) >= 0.95
+----
+
+This similarity measure uses Data Mining/Machine Learning/Deep Learning/Data Science models to compare 2 inputs & generate a report in YAML when they&#x2019;re highly similar. Here&#x2019;s the sample output:
+[source, yaml]
+----
+version: v1
+discrepancies:
+  variations:
+    - property:
+        item1:
+          name:  mbox
+          value: mailto:data.masked@gmail.com # equals item2.value
+        item2:
+          name:  email
+          value: mailto:data.masked@gmail.com # equals item1.value
+    - property:
+        item1:
+          name:  phone
+          value: tel:+*5*.*3*5*7*9 # data masked
+        item2:
+          name:  telephone
+          value: [
+                   +*5* *2*4*6*8,  # data masked
+                   +1-*1*-*5*-*0*0 # data masked
+                 ]
+  additions:
+    - property:
+        item1:
+          name:  interest
+          value: http://en.wikipedia.org/wiki/Semantic_Web
+        item2:
+          name:  address
+          value: {
+                   "@type": PostalAddress,
+                   addressLocality: Hong Kong,
+                   addressRegion: HK
+                 }
+
+----
+
+The values of telephone and address properties are essentially in JSON formats and thus they can be embedded in YAML as the output.
+
+Using this tool enables users to focus on business activities (from data wrangling and data masking to encryption processes) instead of manually searching for common data models across data stores in the organization.
+
+Currently it supports these categories:
+
+* RDBMS (MySQL, PostgreSQL, Oracle, Microsoft SQL Server)
+* NoSQL (Cassandra, MongoDB, Elasticsearch)
+* Files in tabular data formats (.csv, .tsv) and Excel formats (.xls, .xlsx)
+
+The source will be provided upon request if interested.
