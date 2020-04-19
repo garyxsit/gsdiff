@@ -65,7 +65,6 @@ These 2 data records differ in the following:
 . Either one of the actual data isn&#x2019;t updated (e.g. an employee in the organization switched to use another phone number in a country)
 
 This tool solves the above problem by comparing data records between data sources to recommend data discrepancies using a familiar SQL syntax with a similarity measure:
-
 [source, sql]
 ----
 SELECT * FROM origin
@@ -81,17 +80,31 @@ discrepancies:
   variations:
     - property:
         item1:
-          name:  mbox
+          name:  "@context.@id" # equals item2.name
+          value: http://xmlns.com/foaf/spec/Organization
+        item2:
+          name:  "@context.@id" # equals item1.name
+          value: http://schema.org/Organization
+    - property:
+        item1:
+          name:  "@context.member[:1].@id" # equals item2.name
+          value: http://xmlns.com/foaf/spec/Person
+        item2:
+          name:  "@context.member[:1].@id" # equals item1.name
+          value: http://schema.org/Person
+    - property:
+        item1:
+          name:  "@context.member[:1].mbox"
           value: mailto:data.masked@gmail.com # equals item2.value
         item2:
-          name:  email
+          name:  "@context.member[:1].email"
           value: mailto:data.masked@gmail.com # equals item1.value
     - property:
         item1:
-          name:  phone
+          name:  "@context.member[:1].phone"
           value: tel:+*5*.*3*5*7*9 # data are masked
         item2:
-          name:  telephone
+          name:  "@context.member[:1].telephone"
           value: [
                    +*5* *2*4*6*8,  # data are masked
                    +1-*1*-*5*-*0*0 # data are masked
@@ -99,10 +112,10 @@ discrepancies:
   additions:
     - property:
         item1:
-          name:  interest
+          name:  "@context.member[:1].interest"
           value: http://en.wikipedia.org/wiki/Semantic_Web
         item2:
-          name:  address
+          name:  "@context.member[:1].address"
           value: {
                    "@type": PostalAddress,
                    addressLocality: Hong Kong,
@@ -125,17 +138,17 @@ The source code will be provided upon request if interested.
 
 == Quick Q&A Excerpts
 The FOAF namespace is "http://xmlns.com/foaf/0.1/".:::
-It is. These JSON-LD @id keywords also recognize an IRI including the namespace, although it sounds it must use the URL related to the namespace at first glance.
+That&#x2019;s true. These JSON-LD @id keywords also recognize an IRI including the namespace, although it sounds it must use the URL related to the namespace at first glance.
 
 Data warehouses don&#x2019;t belong to the data store and they&#x2019;re still competing against data lakes.:::
 It depends on the context. Please read https://www.ibm.com/cloud/learn/data&#x002D;warehouse#toc&#x002D;what&#x002D;is&#x002D;a&#x002D;&#x002D;1NvW7Mkj[the data warehouse description from IBM]: +
 The data store in general has several meanings. Its narrow description can be an Operational Data Store instance, which is in the data warehouse, and its broad description can be a category of a logical data storage representation from data storage devices, and thus a data warehouse would be in the data store category in this sense. +
-Sometimes it might be interpreted as the data lake has a data warehouse, but it doesn&#x2019;t indicate they are in a transitive relationship in this case. Just like a situation that even though Alice has a child named Bob and there is a child named Carol doesn&#x2019;t mean Alice has Carol as her child. +
+Sometimes it might be interpreted as the data lake has a data warehouse, but it doesn&#x2019;t indicate they are in a transitive relationship in this case. Just like a situation that even though Alice has a child named Bob and there is a child named Carol, it doesn&#x2019;t mean Alice has Carol as her child. +
 As for data lakes, probably because many reports described these 2 terms for comparisons (the data warehouse vs. the data lake) and arouse a misunderstanding that they are mutually exclusive. These, however, aren&#x2019;t implying only one of them can be used. In practice, most of the modern cloud architectures involve a data lake as the data ingestion layer in front of a data warehouse for buffering because of the nature of using the secondary storage in a data warehouse. +
 To sum up, Wikipedia doesn&#x2019;t represent everything and don&#x2019;t judge before knowing the known unknowns and the unknown unknowns.
 
 Syntax errors in your SQL.:::
-The code snippet is a string having SQL syntactic keywords (not yet for binding semantics) used to be passed as a parameter that the tool can parse it for processing. It is relatively simpler than one of corresponding SQL representations:
+The code snippet is a string having SQL syntactic keywords (not yet for binding semantics) used to be passed as a parameter that can be parsed by the tool for the processing. It is relatively simpler than one of the corresponding SQL representations:
 [source, sql]
 ----
 SELECT * FROM origin
@@ -151,13 +164,14 @@ WHERE get_similarity(Oracle.metadata, Cassandra.metadata) >= 0.95
 
 ----
 Ok.:::
-The idea is to reuse SQL keywords as an input and then use graph processing libraries for traversing metadata, and thus it is natural to use these combinations to handle large amounts of data for comparisons at the same time.
+The idea is to reuse SQL keywords as an input and then use graph processing libraries for traversing metadata, and thus it is natural to use these combinations to handle large amounts of data for comparisons at the same time. +
+*Update:* Just wrote a primitive transpiler to translate the code based on type inference mechanisms so the multi-table join SQL also works now.
 
 SQL cannot “elegantly” handle traversing a graph.:::
-As of 2017, it was. It is because the SQL semantics don&#x2019;t own sufficient vocabularies to express all of the graph processing capabilities. It doesn&#x2019;t mean traversal operations cannot be built on the SQL layer. Syntaxes and semantics become synonymous as long as the grammar is context-free. Therefore, several products have been available in the market although they tend to create their keywords as SQL extensions eventually. After all, it&#x2019;s 2020 now and already started a new decade...
+As of 2017, that was true. It is because the SQL semantics don&#x2019;t own sufficient vocabularies to express all of the graph processing capabilities. It doesn&#x2019;t mean traversal operations cannot be built on the SQL layer. Syntaxes and semantics become synonymous as long as the grammar is context-free. Therefore, several products have been available in the market although they tend to create their keywords as SQL extensions eventually. After all, it is already 2020 now.
 
 The report doesn&#x2019;t output discrepancies for @id.:::
-Agreed after having the second thought and it will be fixed.
+There will be collision issues on the property name if it includes @id and uses the previous scheme. Therefore, it is now updated to use an expression based on JSONPath as the string instead.
 
 How do you handle data sources without data headers?:::
 Using Data Mining on the content and its structure of a data record since the tool will read the data in the matrix form anyway. After getting the above information it in turn uses the aforementioned similarity measure to advise and classify the data into a type based on the knowledge base of a posteriori (e.g. column headers are combined as a type of the personal information) as this process would make post-processings efficient.
