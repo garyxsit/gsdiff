@@ -185,11 +185,75 @@ I know. However, it was previously referred to the situation whether the sentenc
 There are mainly 2 definitions for a simile on the web that created the misunderstanding. One of them is having `as` and another one is having `as &#x002E;&#x002E;&#x002E; as`. +
 If it was referred to `as` before asking, then it was interpreted literally. However, that is one of the sufficient conditions and there are other necessary conditions for this case. That is to say, having `as` is one of conditions to understand it can be grouped as a simile when all of the necessary conditions are satisfied. The key to conclude whether it would be a simile or a metaphor is its purpose that is used to compare and convey similarities between items when there is an assumption that they are similar for the simile or is used to compare and convey whether they are similar for cases having an assumption that they should be different. Therefore, to conclude it is a simile by finding whether it has an `as` is not enough. +
 If it was referred to `as long as` before asking this question, then there is a contradiction here because it was previously made an assumption that it was interpreted as phrases and then the question is asked after making this assumption. It means the assumption is changed from interpreting sentences by phrases to words at this moment. Therefore, the assumption made before has been switched when asking the question from the above. +
-Therefore, neither of these cases can conclude it is a simile because looking into `as` or `as &#x002E;&#x002E;&#x002E; as` is only one of the sufficient conditions. That is also one of the reasons that metaphors can only be concluded by concerning its purpose at the same time, because not all metaphors are in the form of `(Subject) is (Object)` where the subject can be a noun, the object can be a noun or an adjective, and `is` can be varied from its tenses and corresponding meaning as this pattern is barely one of its forms, just as a multi-table join SQL can actually be written in other representations that do not mention `JOIN` keywords. +
+Therefore, neither of these cases can conclude it is a simile because looking into `as` or `as &#x002E;&#x002E;&#x002E; as` is only one of the sufficient conditions. That is also one of the reasons that metaphors can only be concluded by concerning its purpose at the same time, because not all metaphors are in the form of having a subject with a predicate where the predicate can be started with a `is` and its varied form from its tenses and corresponding meaning literally and is connected with a noun or an adjective as this pattern is barely one of its forms, just as a multi-table join SQL can actually be written in other representations that do not mention `JOIN` keywords. +
 In spite of this, it is true that this would create confusions. Therefore, it is now updated so that we can aim at focusing on technical communications.
 
 The report doesn&#x2019;t output discrepancies for @id.:::
 There will be collision issues on the property name if it includes @id and uses the previous scheme. Therefore, it is now updated to use an expression based on JSONPath as the string instead.
 
 How do you handle data sources without data headers?:::
-Using Data Mining on the content and its structure of a data record since the tool will read the data in the matrix form anyway. After getting the above information it in turn uses the aforementioned similarity measure to advise and classify the data into a type based on the knowledge base of a posteriori (e.g. column headers are combined as a type of the personal information) as this process would make post-processings efficient.
+Using Data Mining on the content and its structure of a data record since the tool will read the data in the matrix form anyway. After getting the above information it in turn uses the aforementioned similarity measure to advise and classify the data into a type based on the knowledge base of a posteriori (e.g. column headers are combined as a type of the personal information) as this process would make post-processings efficient. +
+*Update:* It is refactored to:
+* Enable transparent mappings of XML and JSON for common scenarios in the industry
+* Catalog metadata per data source instance in a centralized metastore using a pub/sub mechanism so they can be updated dynamically when it is triggered by the SQL input
+* Support the schema-on-read handling with schema versioning properties to discover insertions of data anomalies from the knowledge base for follow-ups
+
+You mentioned Apache Hive, which is a data warehouse, has been adopted by most of the public cloud service providers already. What you are doing here sounds like reinventing the wheel?:::
+It is a tool to solve usual problems in the area of the data processing, and thus it is normal to have lots of overlaps in between. +
+It was originally planned to be used as a tool to search for common data models only. However, there are some of the features that are inherently different from Apache Hive nowadays: +
+* Group and classify interrelated data types when new data are inserted
+* Update metadata on demand from the data source specified in the metastore as a centralized data catalog
+* Support generic queries by simplifying query conditions for XML and JSON comparisons
+
+Using existing SQL implementations in the market users would involve several conversions (e.g. formats, data types, and metadata handlings) when performing the data wrangling process to extract useful information for comparisons:
+[source, sql]
+----
+SELECT * FROM origin
+FULL OUTER JOIN Oracle.metadata ON origin.id = Oracle.metadata.id
+FULL OUTER JOIN Cassandra.metadata ON Oracle.metadata.id = Cassandra.metadata.id
+WHERE origin.record_item_id = Oracle.metadata.xml.record_item_id
+AND Oracle.metadata.xml.record_item_id = Cassandra.metadata.json.record_item_id
+/* 
+   Note SQL function signatures used below are varied depending on implementations where the 
+   get_xml_node_value function retrieves the XML node value in the array iterator one at a 
+   time, the extract function can be an implementation using XPath or XML Query since providers 
+   rarely conform to the industry standard in this area，and the JSON-LD metadata naming 
+   convention would be converted from @* to at_* in the data extraction stage to handle 
+   reserved keywords and then convert them back to @* for an easy-to-read report
+*/
+AND (
+  (
+    origin.member_item_id = ANY (
+      SELECT get_xml_node_value(extract(ora1_mtdt.xml, "/at_context/member//at_id"))
+      FROM Oracle.metadata ora1_mtdt
+      WHERE origin.member_id IN (extract(ora1_mtdt.xml, "/at_context//member"))
+    )
+    AND
+    origin.member_item_id <> ANY (
+      SELECT json_extract(cs1_mtdt.json, "$.at_context.member[*].at_id")
+      FROM Cassandra.metadata cs1_mtdt
+      WHERE origin.member_id IN (json_extract(cs1_mtdt.json, "$.at_context.member[*]"))
+    )
+  ) OR (
+    origin.member_item_id <> ANY (
+      SELECT get_xml_node_value(extract(ora2_mtdt.xml, "/at_context/member//at_id"))
+      FROM Oracle.metadata ora2_mtdt
+      WHERE origin.member_id IN (extract(ora2_mtdt.xml, "/at_context//member"))
+    )
+    AND
+    origin.member_item_id = ANY (
+      SELECT json_extract(cs2_mtdt.json, "$.at_context.member[*].at_id")
+      FROM Cassandra.metadata cs2_mtdt
+      WHERE origin.member_id IN (json_extract(cs2_mtdt.json, "$.at_context.member[*]"))
+    )
+  )
+)
+
+----
+This kind of problem can now be done in the following form benefited from dynamic mappings for XML and JSON:
+[source, sql]
+----
+SELECT * FROM origin
+WHERE Oracle.metadata.xml.member.@id != Cassandra.metadata.json.member.@id
+
+----
