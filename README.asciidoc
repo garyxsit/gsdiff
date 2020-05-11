@@ -257,3 +257,19 @@ SELECT * FROM origin
 WHERE Oracle.metadata.xml.member.@id != Cassandra.metadata.json.member.@id
 
 ----
+
+Shouldn't there be a get_json_node_value function for JSON query conditions also? What about data type conversions?:::
+It is not necessary since it is used to retrieve results when the `Oracle.metadata` item is not equal to any of the `Cassandra.metadata` items one at a time instead of any of the combinations between `Oracle.metadata` items and `Cassandra.metadata` items. As for data type conversions, it depends on the return type of related SQL functions used in different implementations so these are written as a note previously and it would work as expected when those multivalued functions return an array of any type.
+
+Is `@context` missing in your simplified query?:::
+Their semantics are different, although results appear the same in this case since data records previously used do not cover cases that the structure to be searched is located at the different depth of the hierarchy. It can be written in this way without `@context` partly because of traversal properties of the internal graph implementation.
+The code snippet was written to retrieve the result by traversing data records using the `member.@id` structure in any depth because a `member.@id` structure isn't necessarily be located at the same depth as another one. If the code is changed to:
+[source, sql]
+----
+SELECT * FROM origin
+WHERE Oracle.metadata.xml.@context.member.@id != Cassandra.metadata.json.@context.member.@id
+
+----
+
+Note:::
+This would traverse data records using the `@context.member.@id` structure and since `@context` is the root element, it would not be compared with any of the `member.@id` items unless `@context.member.@id` itself is a recursive data structure. The expression used in the code snippet works in a way that is similar to performing traversal operations using XPath or XML Query for XML (`//member`) and JSONPath for JSON (`$..member[*]`). Therefore, the semantics of query conditions are necessary to be generalized in the context of its structure rather than its row in order to perform depth searches on data records for data model comparisons.
