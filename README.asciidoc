@@ -134,9 +134,9 @@ Currently it supports these categories:
 * NoSQL (Cassandra, MongoDB, Elasticsearch)
 * Data Warehouse (Apache Hive)
 * Tabular data formats (.csv, .tsv) and Excel formats (.xls, .xlsx)
-* Directory Service (Active Directory, Azure AD DS^*^)
+* Directory Service (Active Directory, Azure AD DS^[1]^)
 
-^*^ Note: The implementation uses RESTful Reporting APIs that are available from Microsoft and is intended for technical reporting and research purposes only.
+^[1]^ Note: The implementation uses RESTful Reporting APIs that are available from Microsoft and is intended for technical reporting and research purposes only.
 
 The source code will be provided upon request if interested.
 
@@ -196,11 +196,24 @@ Using Data Mining on the content and its structure of a data record since the to
 *Update:* It is refactored to:
 * Enable transparent mappings of XML and JSON for common scenarios in the industry
 * Catalog metadata per data source instance in a centralized metastore using a pub/sub mechanism so they can be updated dynamically when it is triggered by the SQL input
-* Support the schema-on-read handling with schema versioning properties to discover insertions of data anomalies from the knowledge base for follow-ups
+* Support the schema-on-read handling with configurable schema versioning properties^[2]^ including the support of type aliases for structures and namespace mapping functions to discover insertions of data anomalies from the knowledge base for follow-ups
+
+^[2]^ Note: When enabling schema versioning properties with the support of type aliases for structures and namespace mapping functions, it provides a feature to retain existing queries and search useful information from the knowledge base without specifying the namespace for shaping the initial step of building queries for the knowledge discovery.
+
+Pub/sub is for the separation of concerns among distributed systems but you said those data are stored in a centralized metastore. Didn&#x2019;t they conflict with each other?:::
+That was referring to the publish-subscribe pattern to be precise. Basically, it is a messaging pattern that involves a message queue component to use the same set of information (e.g. topic, content, or both) for transferring messages. In this implementation, it uses the data source information as its topic name. The list of configuration information are stored in the metastore while data to be processed are stored separately from the metastore, and thus the message queue component in between would read the configuration information in the metastore dynamically and then the data will be updated when the tool is started and will be mapped with XML and JSON when the query is issued. If you are asking whether it is using distributed or centralized model for the purpose, it is both distributed and centralized since these are barely properties for specifying characteristics of the system. The distributed property means the same set of software items are run in more than one environment whereas the centralized property means the set of software items are managed in one place. They are not mutually exclusive as these are referring to the software having particular properties on different set of features. If they are having different functions in the same set of features, then there are conflicts in between. However, it doesn&#x2019;t have to choose either distributed or centralized in this case because this tool is built for both distributed and centralized needs by its design for handling a real-world use case. Whether the data are placed in the centralized location does not depend on the aforementioned condition as there are systems that do not store the same set of data inside system environments depending on its data partitioning schemes used in various locations but these system environments can be managed in one place at the same time without conflicts in between, although the tool itself has already covered this case and is designed for centralizing common data models from the ground up.
+
+Supporting schema versioning means the query requires to be changed also.:::
+It isn&#x2019;t necessary to change the query as it works similar to the way as in MongoDB that the query will retrieve the data using the corresponding version of the schema at the time it is created to preserve existing results. However, it is updated to make it possible to be controlled by users for the flexibility to cover use cases that change several data models at the same time. Although if it is enabled, it provides a benefit to query related information in the knowledge base and explore the known unknown data afterwards as Data Mining is specialized in using similarity measures for post-processings.
+
+As this supports schema versioning, do you have plans to support data versioning features as well? Just like `as of queries` that make Oracle dominant in the market.:::
+It&#x2019;s relatively intuitive in a graph implementation compared with data management solutions in the market by simply organizing the data with a time axis as a dimension^[3]^ for each of data items so the list of historical data can easily be retrieved without using `flashback queries` or `hierarchical queries` for the same purpose.
+
+^[3]^ Note: This is still in the area of science discussions instead of science fiction topics.
 
 You mentioned Apache Hive, which is a data warehouse, has been adopted by most of the public cloud service providers already. What you are doing here sounds like reinventing the wheel?:::
 It is a tool to solve usual problems in the area of the data processing, and thus it is normal to have lots of overlaps in between. +
-It was originally planned to be used as a tool to search for common data models only. However, there are some of the features that are inherently different from Apache Hive nowadays: +
+It was originally planned to be used as a tool to search for common data models only. However, there are some of the features that are comparatively different from Apache Hive nowadays: +
 * Group and classify interrelated data types when new data are inserted
 * Update metadata on demand from the data source specified in the metastore as a centralized data catalog
 * Support generic queries by simplifying query conditions for XML and JSON comparisons
@@ -258,12 +271,12 @@ WHERE Oracle.metadata.xml.member.@id != Cassandra.metadata.json.member.@id
 
 ----
 
-Shouldn't there be a get_json_node_value function for JSON query conditions also? What about data type conversions?:::
+Shouldn&#x2019;t there be a get_json_node_value function for JSON query conditions also? And what about data type conversions?:::
 It is not necessary since it is used to retrieve results when the `Oracle.metadata` item is not equal to any of the `Cassandra.metadata` items one at a time instead of any of the combinations between `Oracle.metadata` items and `Cassandra.metadata` items. As for data type conversions, it depends on the return type of related SQL functions used in different implementations so these are written as a note previously and it would work as expected when those multivalued functions return an array of any type.
 
 Is `@context` missing in your simplified query?:::
-Their semantics are different, although results appear the same in this case since data records previously used do not cover cases that the structure to be searched is located at the different depth of the hierarchy. It can be written in this way without `@context` partly because of traversal properties of the internal graph implementation.
-The code snippet was written to retrieve the result by traversing data records using the `member.@id` structure in any depth because a `member.@id` structure isn't necessarily be located at the same depth as another one. If the code is changed to:
+Their semantics are different, although results appear the same in this case since data records previously used do not cover cases that the structure to be searched is located at the different depth of the hierarchy. It can be written in this way without `@context` partly because of traversal properties of the internal graph implementation. +
+The code snippet was written to retrieve the result by traversing data records using the `member.@id` structure in any depth because a `member.@id` structure isn&#x2019;t necessarily be located at the same depth as another one. If the code is changed to:
 [source, sql]
 ----
 SELECT * FROM origin
@@ -272,4 +285,4 @@ WHERE Oracle.metadata.xml.@context.member.@id != Cassandra.metadata.json.@contex
 ----
 
 Note:::
-This would traverse data records using the `@context.member.@id` structure and since `@context` is the root element, it would not be compared with any of the `member.@id` items unless `@context.member.@id` itself is a recursive data structure. The expression used in the code snippet works in a way that is similar to performing traversal operations using XPath or XML Query for XML (`//member`) and JSONPath for JSON (`$..member[*]`). Therefore, the semantics of query conditions are necessary to be generalized in the context of its structure rather than its row in order to perform depth searches on data records for data model comparisons.
+This would traverse data records using the `@context.member.@id` structure and since `@context` is the root element, it would not be compared with any of the `member.@id` items unless `@context.member.@id` itself is a recursive data structure. The expression used in the code snippet works in a way that is similar to performing traversal operations using XPath or XML Query for XML (e.g. `//member`) and JSONPath for JSON (e.g. `$..member[*]`). Therefore, the semantics of query conditions are necessary to be generalized in the context of its structure rather than its row in order to perform depth searches on data records for data model comparisons.
