@@ -205,7 +205,10 @@
 MIT Licenses
 ========================================================================
 
-The gsdiff project bundles the following components under the MIT License:
+The gsdiff project packages a Docker container image that bundles the
+following components under the MIT License for the scalable deployment
+purpose and does not imply to include any other dynamically linked
+components used and derived from build scripts in this list:
 
      facebook/react v16.2.0 (https://reactjs.org/)
      cucumber/cucumber 5.2.0 (https://cucumber.io/)
