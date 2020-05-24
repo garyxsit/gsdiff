@@ -195,7 +195,7 @@ How do you handle data sources without data headers?:::
 Using Data Mining on the content and its structure of a data record since the tool will read the data in the matrix form anyway. After getting the above information it in turn uses the aforementioned similarity measure to advise and classify the data into a type based on the knowledge base of a posteriori (e.g. column headers are combined as a type of the personal information) as this process would make post-processings efficient. +
 *Update:* It is refactored to:
 * Enable transparent mappings of XML and JSON for common scenarios in the industry
-* Catalog metadata per data source instance in a centralized metastore using a pub/sub mechanism so they can be updated dynamically when it is triggered by the SQL input
+* Catalog metadata per data source instance in a centralized metastore using a pub/sub mechanism so they can be updated dynamically when it is triggered by the SQL input that can be run in a CLI or in a query editor of a web UI
 * Support the schema-on-read handling with configurable schema versioning properties^[2]^ including the support of type aliases for structures and namespace mapping functions to discover insertions of data anomalies from the knowledge base for follow-ups
 
 ^[2]^ Note: When enabling schema versioning properties with the support of type aliases for structures and namespace mapping functions, it provides a feature to retain existing queries and search useful information from the knowledge base without specifying the namespace for shaping the initial step of building queries for the knowledge discovery.
@@ -207,7 +207,7 @@ Supporting schema versioning means the query requires to be changed also.:::
 It isn&#x2019;t necessary to change the query as it works similar to the way as in MongoDB that the query will retrieve the data using the corresponding version of the schema at the time it is created to preserve existing results. However, it is updated to make it possible to be controlled by users for the flexibility to cover use cases that change several data models at the same time. Although if it is enabled, it provides a benefit to query related information in the knowledge base and explore the known unknown data afterwards as Data Mining is specialized in using similarity measures for post-processings.
 
 As this supports schema versioning, do you have plans to support data versioning features as well? Just like `as of queries` that make Oracle dominant in the market.:::
-It&#x2019;s relatively intuitive in a graph implementation compared with data management solutions in the market by simply organizing the data with a time axis as a dimension^[3]^ for each of data items so the list of historical data can easily be retrieved without using `flashback queries` or `hierarchical queries` for the same purpose.
+It&#x2019;s relatively intuitive in a graph implementation compared with data management solutions in the market by simply organizing the data with a time axis as a dimension^[3]^ for each of data items so the list of historical data can easily be retrieved without using `flashback queries` or `hierarchical queries` on time columns for the same purpose.
 
 ^[3]^ Note: This is still in the area of science discussions instead of science fiction topics.
 
