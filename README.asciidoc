@@ -75,7 +75,7 @@ WHERE get_similarity(Oracle.metadata, Cassandra.metadata) >= 0.95
 This similarity measure uses statistical models (in the domain of Data Mining &#x2229; Machine Learning &#x2229; Deep Learning &#x2229; Data Science) to compare 2 inputs and generate a report in YAML when they&#x2019;re highly similar. Here&#x2019;s the sample output:
 [source, yaml]
 ----
-version: v1
+version: v2
 discrepancies:
   variations:
     - property:
@@ -111,10 +111,11 @@ discrepancies:
                  ]
   additions:
     - property:
-        item1:
+        item:
           name:  "@context.member[:1].interest"
           value: http://en.wikipedia.org/wiki/Semantic_Web
-        item2:
+    - property:
+        item:
           name:  "@context.member[:1].address"
           value: {
                    "@type": PostalAddress,
@@ -197,6 +198,7 @@ Using Data Mining on the content and its structure of a data record since the to
 * Enable transparent mappings of XML and JSON for common scenarios in the industry
 * Catalog metadata per data source instance in a centralized metastore using a pub/sub mechanism so they can be updated dynamically when it is triggered by the SQL input that can be run in a CLI or in a query editor of a web UI
 * Support the schema-on-read handling with configurable schema versioning properties^[2]^ including the support of type aliases for structures and namespace mapping functions to discover insertions of data anomalies from the knowledge base for follow-ups
+* Implement a mechanism similar to the federated queries of Amazon Athena to compare internal data with excerpts of WWW data and diff one page and another page on the web
 
 ^[2]^ Note: When enabling schema versioning properties with the support of type aliases for structures and namespace mapping functions, it provides a feature to retain existing queries and search useful information from the knowledge base without specifying the namespace for shaping the initial step of building queries for the knowledge discovery.
 
