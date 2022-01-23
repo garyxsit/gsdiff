@@ -137,7 +137,7 @@ Currently it supports these categories:
 * Tabular data formats (.csv, .tsv) and Excel formats (.xls, .xlsx)
 * Directory Service (Active Directory, Azure AD DS^[1]^)
 
-^[1]^ Note: The implementation uses RESTful Reporting APIs that are available from Microsoft and is intended for technical reporting and research purposes only.
+^[1]^ Note: The implementation uses RESTful Reporting APIs of Azure AD that are available from Microsoft to retrieve data in Azure AD DS and is intended for technical reporting and research purposes only.
 
 The source code will be provided upon request if interested.
 
@@ -198,7 +198,7 @@ Using Data Mining on the content and its structure of a data record since the to
 * Enable transparent mappings of XML and JSON for common scenarios in the industry
 * Catalog metadata per data source instance in a centralized metastore using a pub/sub mechanism so they can be updated dynamically when it is triggered by the SQL input that can be run in a CLI or in a query editor of a web UI
 * Support the schema-on-read handling with configurable schema versioning properties^[2]^ including the support of type aliases for structures and namespace mapping functions to discover insertions of data anomalies from the knowledge base for follow-ups
-* Implement a mechanism similar to the federated queries of Amazon Athena & Redshift Spectrum to compare internal data with excerpts of WWW data and diff one page and another page on the web
+* Implement a mechanism similar to select statement syntaxes of the federated queries from Amazon Athena & Redshift Spectrum to compare internal data with excerpts of WWW data and diff one page and another page on the web
 
 ^[2]^ Note: When enabling schema versioning properties with the support of type aliases for structures and namespace mapping functions, it provides a feature to retain existing queries and search useful information from the knowledge base without specifying the namespace for shaping the initial step of building queries for the knowledge discovery.
 
